@@ -1,0 +1,41 @@
+import kotlin.time.Instant;
+
+-- One USGS event. Column names follow schema.org Event / GeoCoordinates (startDate, location,
+-- latitude, longitude). Deviations: id is the USGS feature id; depthKm stays in USGS units (km
+-- below the surface) rather than schema.org elevation; magnitude and magnitudeType have no
+-- schema.org property; fetchedAt is cache bookkeeping (when USGS last sent this row).
+CREATE TABLE Earthquake (
+    id TEXT NOT NULL PRIMARY KEY,
+    startDate INTEGER AS Instant NOT NULL,
+    location TEXT,
+    latitude REAL NOT NULL,
+    longitude REAL NOT NULL,
+    depthKm REAL NOT NULL,
+    magnitude REAL,
+    magnitudeType TEXT,
+    fetchedAt INTEGER AS Instant NOT NULL
+);
+
+-- Newest-first ordering and the window trim walk this one; the box filter uses latitude.
+CREATE INDEX Earthquake_startDate ON Earthquake(startDate);
+CREATE INDEX Earthquake_latitude ON Earthquake(latitude);
+
+-- What USGS would return for a query (see queryEarthquakes). A NULL magnitude never matches.
+-- A box across ±180 has maxLongitude above 180 (see toEarthquakeQuery); USGS longitudes don't,
+-- hence the +360 branch.
+selectMatching:
+SELECT * FROM Earthquake
+WHERE magnitude >= :minMagnitude
+  AND startDate >= :startTime
+  AND latitude BETWEEN :minLatitude AND :maxLatitude
+  AND (longitude BETWEEN :minLongitude AND :maxLongitude
+       OR longitude + 360 BETWEEN :minLongitude AND :maxLongitude)
+ORDER BY startDate DESC
+LIMIT :limit;
+
+upsert:
+INSERT OR REPLACE INTO Earthquake VALUES ?;
+
+-- Windows only move forward, so anything older than a query's start can never match again.
+deleteOlderThan:
+DELETE FROM Earthquake WHERE startDate < :startTime;
