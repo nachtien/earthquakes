@@ -8,6 +8,8 @@ Drag the card's handle (or tap it) to expand the list to full height. Tapping a 
 flies the map to that earthquake, hides every other pin, and shows its details in the same card: magnitude, time, depth,
 coordinates and distance from you. Back returns you to the list, where you were.
 
+<img src="docs/screenshot.png" alt="The map of earthquakes around the San Francisco Bay Area, with the list card below" width="320">
+
 ## Setup
 
 - Android Studio (recent stable) or the Android SDK command-line tools.
