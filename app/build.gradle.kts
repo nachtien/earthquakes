@@ -1,4 +1,3 @@
-import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
@@ -9,12 +8,7 @@ plugins {
 
 // Google Maps key: MAPS_API_KEY in the gitignored local.properties, or the environment (CI).
 // Empty when unset, which still builds but shows a blank map.
-val mapsApiKey: String = providers
-    .fileContents(rootProject.layout.projectDirectory.file("local.properties"))
-    .asText
-    .map { text -> Properties().apply { load(text.reader()) }.getProperty("MAPS_API_KEY").orEmpty() }
-    .orElse(providers.environmentVariable("MAPS_API_KEY"))
-    .getOrElse("")
+val mapsApiKey =
 
 android {
     namespace = "com.achtien.codingtemplate"
