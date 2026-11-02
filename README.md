@@ -28,7 +28,21 @@ Fill in the Maps api key in the build.gradle.kts file.
 Or open the project in Android Studio and run the `app` configuration. On first launch the app
 asks for approximate location; everything works without it.
 
+## Technical Decisions
+- Koin for DI, because it's simple and works well with Compose.
+- Ktor for networking, because it is the most idiomatic Kotlin HTTP client.
+- SQLDelight for the offline database, because it generates type-safe Kotlin APIs from SQL.
+
+## Trade-offs
+- There is a large increase of code due to updating the bounds and displaying earthquakes based on the location of the map. Displaying items just in a list would have 
+significantly reduced code.
+- I reused the overlay card between both the main page and the details view, which made the code more complex than if I had just used a separate card for each. 
+By doing this, we were able to remove the need for the navigation library and was also able to reuse the same `Google Map` component. This made the UI much more fluid, while introducing slightly more complexity.
+
+
 ## Architecture
+
+The architecture of this app is inspired by [People In Space](https://github.com/joreilly/PeopleInSpace) and
 
 Three Gradle modules in a strict line (`:app` → `:repository` → `:networking`), wired with Koin.
 The database is the source of truth: the screen only shows its rows, and USGS's answers only
