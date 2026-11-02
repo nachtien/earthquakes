@@ -16,15 +16,7 @@ coordinates and distance from you. Back returns you to the list, where you were.
 - JDK 17. If none is installed, Gradle downloads one on the first build.
 - A Google Maps API key with **Maps SDK for Android** enabled.
 
-Create `local.properties` in the project root (it's gitignored):
-
-```properties
-sdk.dir=/path/to/Android/sdk
-MAPS_API_KEY=your-key-here
-```
-
-`MAPS_API_KEY` can also come from the environment. Without a key the app builds and runs, but
-the map is blank.
+Fill in the Maps api key in the build.gradle.kts file.
 
 ## Building and running
 
@@ -38,10 +30,36 @@ asks for approximate location; everything works without it.
 
 ## Architecture
 
-Three Gradle modules in a strict line, wired with Koin:
+Three Gradle modules in a strict line (`:app` → `:repository` → `:networking`), wired with Koin.
+The database is the source of truth: the screen only shows its rows, and USGS's answers only
+ever go into it.
 
-```
-:app (Compose UI)  ──▶  :repository (Android library)  ──▶  :networking (pure JVM)
+```mermaid
+flowchart LR
+    subgraph app [":app · Compose UI"]
+        Screen["EarthquakeMapScreen"]
+        VM["EarthquakeMapViewModel"]
+    end
+    subgraph repository [":repository · Android library"]
+        Repo["UsgsEarthquakeRepository"]
+        DB[("SQLDelight<br/>earthquakes.db")]
+        Loc["UserLocationRepository"]
+    end
+    subgraph networking [":networking · pure JVM"]
+        Api["HttpClient.queryEarthquakes"]
+    end
+    USGS(["USGS FDSN API"])
+    Fused(["Fused location provider"])
+
+    Screen -- "region, Refresh, selection" --> VM
+    VM -- "StateFlow state" --> Screen
+    VM -- "observe(query)" --> Repo
+    VM -- "location" --> Loc
+    Repo -- "fetch(query)" --> Api
+    Api --> USGS
+    Repo -- "upsert, trim" --> DB
+    DB -- "rows(query)" --> Repo
+    Loc --> Fused
 ```
 
 - **`:networking`**: a Ktor client and `HttpClient.queryEarthquakes(EarthquakeQuery)` for the FDSN
